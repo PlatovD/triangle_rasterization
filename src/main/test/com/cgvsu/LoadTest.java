@@ -2,6 +2,7 @@ package com.cgvsu;
 
 import com.cgvsu.rasterization.Rasterization;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.paint.Color;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -13,11 +14,11 @@ public class LoadTest {
     private final Canvas canvas = new Canvas();
 
     @Test
-    public void draw1000PolygonsBresenham() {
+    public void draw1000Polygons() {
         Random random = new Random();
         Assertions.assertTimeout(Duration.ofSeconds(4), () -> {
             for (int i = 0; i < 1000; i++) {
-                Rasterization.drawTriangle(
+                Rasterization.drawTriangleNotBresenham(
                         canvas.getGraphicsContext2D(),
                         random.nextInt(TRIANGLE_CORD_BOUND), random.nextInt(TRIANGLE_CORD_BOUND),
                         random.nextInt(TRIANGLE_CORD_BOUND), random.nextInt(TRIANGLE_CORD_BOUND),
@@ -28,15 +29,16 @@ public class LoadTest {
     }
 
     @Test
-    public void draw1000Polygons() {
+    public void draw1000PolygonsBresenham() {
         Random random = new Random();
         Assertions.assertTimeout(Duration.ofSeconds(4), () -> {
             for (int i = 0; i < 1000; i++) {
-                Rasterization.drawTriangleNotBresenham(
+                Rasterization.drawTriangleByIterator(
                         canvas.getGraphicsContext2D(),
                         random.nextInt(TRIANGLE_CORD_BOUND), random.nextInt(TRIANGLE_CORD_BOUND),
                         random.nextInt(TRIANGLE_CORD_BOUND), random.nextInt(TRIANGLE_CORD_BOUND),
-                        random.nextInt(TRIANGLE_CORD_BOUND), random.nextInt(TRIANGLE_CORD_BOUND)
+                        random.nextInt(TRIANGLE_CORD_BOUND), random.nextInt(TRIANGLE_CORD_BOUND),
+                        Color.PINK
                 );
             }
         });

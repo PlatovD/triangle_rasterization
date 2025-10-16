@@ -4,8 +4,10 @@ import com.cgvsu.rasterization.Rasterization;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.paint.Color;
 
 import java.io.IOException;
+import java.util.Random;
 
 public class RasterizationController {
 
@@ -19,12 +21,16 @@ public class RasterizationController {
         anchorPane.prefWidthProperty().addListener((ov, oldValue, newValue) -> canvas.setWidth(newValue.doubleValue()));
         anchorPane.prefHeightProperty().addListener((ov, oldValue, newValue) -> canvas.setHeight(newValue.doubleValue()));
 
-        Rasterization.drawTriangle(
-                canvas.getGraphicsContext2D(),
-                200, 100,
-                500, 350,
-                100, 500
-        );
+        Random random = new Random();
+        Color[] colors = {Color.RED, Color.BLACK, Color.BLUE};
+        for (int i = 0; i < 10; i++)
+            Rasterization.drawTriangleByIterator(
+                    canvas.getGraphicsContext2D(),
+                    random.nextInt(700), random.nextInt(600),
+                    random.nextInt(700), random.nextInt(600),
+                    random.nextInt(700), random.nextInt(600),
+                    colors[i % 3]
+            );
     }
 
 }
