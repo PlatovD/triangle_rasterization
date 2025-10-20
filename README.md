@@ -11,6 +11,7 @@
   - Нахождение границ при помощи алгоритма Брезенхейма
   - Итератор для обхода границ
   - Классическое заполнение треугольника
+  - Использование барицентрических координат для интерполяции цвета
 
 - **Высокая производительность**:
   - Ленивые вычисления координат
@@ -33,4 +34,7 @@ Rasterization.drawTriangleByIterator(
 
 ## Дополнительные возможности
 <img width="1592" height="1192" alt="Screenshot from 2025-10-15 15-55-35" src="https://github.com/user-attachments/assets/513c665b-d5ef-4f06-88c2-43102bc4b653" />
+
+<img width="1598" height="840" alt="image" src="https://github.com/user-attachments/assets/d4de58d8-802b-4c90-9be2-db6260f88ae2" />
+
 
