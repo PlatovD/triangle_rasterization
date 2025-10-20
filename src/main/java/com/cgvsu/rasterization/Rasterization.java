@@ -18,10 +18,19 @@ public class Rasterization {
                 pixelWriter.setColor(col, row, color);
     }
 
-    public static void drawLine(GraphicsContext graphicsContext, double x1, double y1, double x2, double y2) {
+    /**
+     * Метод рисования линии. Позволяет рисовать ее из точки 1 в точку 2. Использует округление и
+     * линейную интерполяцию для того, чтобы получить промежуточные значения и построить путь из 1 в 2.
+     *
+     * @param pixelWriter объект для рисования
+     * @param x1          точка начала
+     * @param y1          точка начала
+     * @param x2          точка конца
+     * @param y2          точка конца
+     */
+    public static void drawLine(PixelWriter pixelWriter, double x1, double y1, double x2, double y2) {
         double dx = x2 - x1;
         double dy = y2 - y1;
-        final PixelWriter pixelWriter = graphicsContext.getPixelWriter();
         if (Math.abs(dx) > Math.abs(dy)) {
             if (x1 > x2) {
                 double tmp = x2;
@@ -53,6 +62,43 @@ public class Rasterization {
         }
     }
 
+    /**
+     * Вычисляет значения функции d = f(i) от i=i0 до i=i1
+     * Использует числа с плавающей точкой и их округление.
+     *
+     * @param d0 значение функции в начальной координате
+     * @param i0 аргумент функции в начальной координате
+     * @param d1 значение функции в конечной координате
+     * @param i1 аргумент функции в конечной координате
+     */
+    private static int[] interpolate(double d0, double i0, double d1, double i1) {
+        double tmp;
+        int[] values = new int[(int) ((i1 - i0) + 1)];
+        if (i0 > i1) {
+            tmp = i1;
+            i1 = i0;
+            i0 = tmp;
+        }
+
+        double a = (d1 - d0) / (i1 - i0);
+        double value = d0;
+        for (double i = i0; i <= i1; i++) {
+            values[(int) (i - i0)] = (int) Math.round(value);
+            value += a;
+        }
+        return values;
+    }
+
+
+    /**
+     * Классический алгоритм Брезенхейма. Для каждого y из отрезка на входе находит для него x.
+     *
+     * @param x0 координата точки начала
+     * @param y0 координата точки начала
+     * @param x1 координата точки конца
+     * @param y1 координата точки конца
+     * @return массив из x для данных y
+     */
     public static int[] interpolateBresenham(int x0, int y0, int x1, int y1) {
         int sizeOut = Math.abs(y1 - y0) + 1;
         boolean change = Math.abs(y1 - y0) > Math.abs(x1 - x0);
@@ -99,40 +145,25 @@ public class Rasterization {
     }
 
     /**
-     * Calculates values of function d = f(i) from i=i0 to i=i1
+     * С помощью линий рисует треугольник, однако не заполняет его, а ставит пиксели только на стороны.
      */
-    private static int[] interpolate(double d0, double i0, double d1, double i1) {
-        double tmp;
-        int[] values = new int[(int) ((i1 - i0) + 1)];
-        if (i0 > i1) {
-            tmp = i1;
-            i1 = i0;
-            i0 = tmp;
-        }
-
-        double a = (d1 - d0) / (i1 - i0);
-        double value = d0;
-        for (double i = i0; i <= i1; i++) {
-            values[(int) (i - i0)] = (int) Math.round(value);
-            value += a;
-        }
-        return values;
+    public static void drawWireFrameTriangle(PixelWriter pixelWriter, double x0, double y0, double x1, double y1, double x2, double y2) {
+        drawLine(pixelWriter, x0, y0, x1, y1);
+        drawLine(pixelWriter, x0, y0, x2, y2);
+        drawLine(pixelWriter, x2, y2, x1, y1);
     }
 
-    public static void drawWireFrameTriangle(GraphicsContext graphicsContext, double x0, double y0, double x1, double y1, double x2, double y2) {
-        drawLine(graphicsContext, x0, y0, x1, y1);
-        drawLine(graphicsContext, x0, y0, x2, y2);
-        drawLine(graphicsContext, x2, y2, x1, y1);
-    }
-
+    /**
+     * Метод для растеризации треугольника с использованием идеи scanline и нахождения границ через алгоритм
+     * Брезенхейма.
+     */
     public static void drawTriangle(
-            final GraphicsContext graphicsContext,
+            final PixelWriter pixelWriter,
             int x0, int y0,
             int x1, int y1,
             int x2, int y2
 
     ) {
-        final PixelWriter pixelWriter = graphicsContext.getPixelWriter();
         int tmp;
         if (y0 > y1) {
             tmp = y1;
@@ -185,15 +216,136 @@ public class Rasterization {
         }
     }
 
+    private static int findThirdOrderDeterminant(
+            int a00, int a01, int a02,
+            int a10, int a11, int a12,
+            int a20, int a21, int a22
+    ) {
+        return ((a00 * a11 * a22) + (a10 * a21 * a02) + (a01 * a12 * a20)) - ((a02 * a11 * a20) + (a01 * a10 * a22) + (a12 * a21 * a00));
+    }
+
+    private static double[] findBarycentricCords(int xCur, int yCur, int x0, int y0, int x1, int y1, int x2, int y2) {
+        int mainDet = findThirdOrderDeterminant(
+                x0, x1, x2,
+                y0, y1, y2,
+                1, 1, 1
+        );
+        if (mainDet == 0) return new double[]{0, 0, 0};
+
+        int detForAlpha = findThirdOrderDeterminant(
+                xCur, x1, x2,
+                yCur, y1, y2,
+                1, 1, 1
+        );
+        int detForBeta = findThirdOrderDeterminant(
+                x0, xCur, x2,
+                y0, yCur, y2,
+                1, 1, 1
+        );
+        int detForLambda = findThirdOrderDeterminant(
+                x0, x1, xCur,
+                y0, y1, yCur,
+                1, 1, 1
+        );
+        return new double[]{(double) detForAlpha / mainDet, (double) detForBeta / mainDet, (double) detForLambda / mainDet};
+    }
+
+    /**
+     * Метод для растеризации треугольника через scanline и алгоритм Брезенхейма для нахождения границ,
+     * реализованный в виде итератора по границам. Позволяет закрашивать треугольник тремя цветами с
+     * интерполяцией между вершинами. Использует барицентрические координаты. Работает медленнее заполнения
+     * одним цветом.
+     */
+    public static void drawInterpolatedTriangleByIterator(
+            final PixelWriter pixelWriter,
+            int x0, int y0,
+            int x1, int y1,
+            int x2, int y2,
+            Color color1,
+            Color color2,
+            Color color3
+    ) {
+        int tmp;
+        if (y0 > y1) {
+            tmp = y1;
+            y1 = y0;
+            y0 = tmp;
+
+            tmp = x1;
+            x1 = x0;
+            x0 = tmp;
+        }
+        if (y1 > y2) {
+            tmp = y2;
+            y2 = y1;
+            y1 = tmp;
+
+            tmp = x2;
+            x2 = x1;
+            x1 = tmp;
+        }
+        if (y0 > y1) {
+            tmp = y1;
+            y1 = y0;
+            y0 = tmp;
+
+            tmp = x1;
+            x1 = x0;
+            x0 = tmp;
+        }
+        BorderIterator borderIterator1 = new BresenhamBorderIterator(x0, y0, x1, y1);
+        BorderIterator borderIterator2 = new BresenhamBorderIterator(x0, y0, x2, y2);
+        BorderIterator borderIterator3 = new BresenhamBorderIterator(x1, y1, x2, y2);
+
+        while (borderIterator1.hasNext() && borderIterator2.hasNext()) {
+            int y = borderIterator1.getY();
+            int leftX = Math.min(borderIterator1.getX(), borderIterator2.getX());
+            int rightX = Math.max(borderIterator1.getX(), borderIterator2.getX());
+            for (int x = leftX; x <= rightX; x++) {
+                double[] barycentric = findBarycentricCords(x, y, x0, y0, x1, y1, x2, y2);
+                pixelWriter.setColor(x, y, createColorFromBarycentric(barycentric, color1, color2, color3));
+            }
+            borderIterator1.next();
+            borderIterator2.next();
+        }
+
+        while (borderIterator3.hasNext() && borderIterator2.hasNext()) {
+            int y = borderIterator2.getY();
+            int leftX = Math.min(borderIterator2.getX(), borderIterator3.getX());
+            int rightX = Math.max(borderIterator2.getX(), borderIterator3.getX());
+            for (int x = leftX; x <= rightX; x++) {
+                double[] barycentric = findBarycentricCords(x, y, x0, y0, x1, y1, x2, y2);
+                pixelWriter.setColor(x, y, createColorFromBarycentric(barycentric, color1, color2, color3));
+            }
+            borderIterator2.next();
+            borderIterator3.next();
+        }
+    }
+
+    private static Color createColorFromBarycentric(double[] barycentric, Color color1, Color color2, Color color3) {
+        double a = Math.max(0, Math.min(1, barycentric[0]));
+        double b = Math.max(0, Math.min(1, barycentric[1]));
+        double c = Math.max(0, Math.min(1, barycentric[2]));
+
+        return new Color(
+                color1.getRed() * a + color2.getRed() * b + color3.getRed() * c,
+                color1.getGreen() * a + color2.getGreen() * b + color3.getGreen() * c,
+                color1.getBlue() * a + color2.getBlue() * b + color3.getBlue() * c,
+                1);
+
+    }
+
+    /**
+     * Метод для растеризации треугольника с использованием идеи scanline и нахождения границ через алгоритм
+     * Брезенхейма, реализованный в виде итератора по границам треугольника.
+     */
     public static void drawTriangleByIterator(
-            final GraphicsContext graphicsContext,
+            final PixelWriter pixelWriter,
             int x0, int y0,
             int x1, int y1,
             int x2, int y2,
             Color color
-
     ) {
-        final PixelWriter pixelWriter = graphicsContext.getPixelWriter();
         int tmp;
         if (y0 > y1) {
             tmp = y1;
@@ -249,14 +401,17 @@ public class Rasterization {
         }
     }
 
+    /**
+     * Метод рестеризации треугольника через нахождение границ при помощи линейной интерполяции. Использует
+     * операции с плавающей точкой.
+     */
     public static void drawTriangleNotBresenham(
-            final GraphicsContext graphicsContext,
+            final PixelWriter pixelWriter,
             int x0, int y0,
             int x1, int y1,
             int x2, int y2
 
     ) {
-        final PixelWriter pixelWriter = graphicsContext.getPixelWriter();
         int tmp;
         if (y0 > y1) {
             tmp = y1;

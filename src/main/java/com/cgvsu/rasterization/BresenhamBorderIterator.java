@@ -1,5 +1,10 @@
 package com.cgvsu.rasterization;
 
+
+/**
+ * Реализация BorderIterator. Позволяет создавать итерационный путь из точек, следуя из первой во вторую.
+ * Путь строится алгоритмом Брезенхейма и включает в себя все положения, в которых может находиться линия.
+ */
 public class BresenhamBorderIterator implements BorderIterator {
     private int cntSteps;
 

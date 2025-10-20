@@ -1,7 +1,8 @@
 package com.cgvsu;
 
 import com.cgvsu.rasterization.Rasterization;
-import javafx.scene.canvas.Canvas;
+import com.cgvsu.testutil.MockPixelWriter;
+import javafx.scene.image.PixelWriter;
 import javafx.scene.paint.Color;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -9,17 +10,19 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.util.Random;
 
+
 public class LoadTest {
-    private final int TRIANGLE_CORD_BOUND = 300;
-    private final Canvas canvas = new Canvas();
+    private final int TRIANGLE_CORD_BOUND = 10000;
+    private final int CNT_TRIANGLES = 2000;
+    private final PixelWriter pixelWriter = new MockPixelWriter();
 
     @Test
     public void draw1000Polygons() {
         Random random = new Random();
-        Assertions.assertTimeout(Duration.ofSeconds(4), () -> {
-            for (int i = 0; i < 1000; i++) {
+        Assertions.assertTimeout(Duration.ofSeconds(5), () -> {
+            for (int i = 0; i < CNT_TRIANGLES; i++) {
                 Rasterization.drawTriangleNotBresenham(
-                        canvas.getGraphicsContext2D(),
+                        pixelWriter,
                         random.nextInt(TRIANGLE_CORD_BOUND), random.nextInt(TRIANGLE_CORD_BOUND),
                         random.nextInt(TRIANGLE_CORD_BOUND), random.nextInt(TRIANGLE_CORD_BOUND),
                         random.nextInt(TRIANGLE_CORD_BOUND), random.nextInt(TRIANGLE_CORD_BOUND)
@@ -31,10 +34,10 @@ public class LoadTest {
     @Test
     public void draw1000PolygonsBresenham() {
         Random random = new Random();
-        Assertions.assertTimeout(Duration.ofSeconds(4), () -> {
-            for (int i = 0; i < 1000; i++) {
+        Assertions.assertTimeout(Duration.ofSeconds(5), () -> {
+            for (int i = 0; i < CNT_TRIANGLES; i++) {
                 Rasterization.drawTriangleByIterator(
-                        canvas.getGraphicsContext2D(),
+                        pixelWriter,
                         random.nextInt(TRIANGLE_CORD_BOUND), random.nextInt(TRIANGLE_CORD_BOUND),
                         random.nextInt(TRIANGLE_CORD_BOUND), random.nextInt(TRIANGLE_CORD_BOUND),
                         random.nextInt(TRIANGLE_CORD_BOUND), random.nextInt(TRIANGLE_CORD_BOUND),
