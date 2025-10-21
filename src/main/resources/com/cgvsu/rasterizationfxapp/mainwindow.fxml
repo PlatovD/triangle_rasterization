@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane fx:id="anchorPane" xmlns:fx="http://javafx.com/fxml"
+<AnchorPane fx:id="anchorPane" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.cgvsu.rasterizationfxapp.RasterizationController">
-    <Canvas fx:id="canvas" width="800" height="600" AnchorPane.topAnchor="30.0"/>
+    <Canvas fx:id="canvas" height="600" onMouseMoved="#handleMouseMove"
+            onMousePressed="#handleMouseDown" width="800" AnchorPane.topAnchor="30.0"/>
+
 </AnchorPane>

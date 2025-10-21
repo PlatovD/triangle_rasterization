@@ -261,11 +261,12 @@ public class Rasterization {
             int x0, int y0,
             int x1, int y1,
             int x2, int y2,
+            Color color0,
             Color color1,
-            Color color2,
-            Color color3
+            Color color2
     ) {
         int tmp;
+        Color tmpColor;
         if (y0 > y1) {
             tmp = y1;
             y1 = y0;
@@ -274,6 +275,10 @@ public class Rasterization {
             tmp = x1;
             x1 = x0;
             x0 = tmp;
+
+            tmpColor = color0;
+            color0 = color1;
+            color1 = tmpColor;
         }
         if (y1 > y2) {
             tmp = y2;
@@ -283,6 +288,10 @@ public class Rasterization {
             tmp = x2;
             x2 = x1;
             x1 = tmp;
+
+            tmpColor = color1;
+            color1 = color2;
+            color2 = tmpColor;
         }
         if (y0 > y1) {
             tmp = y1;
@@ -292,6 +301,10 @@ public class Rasterization {
             tmp = x1;
             x1 = x0;
             x0 = tmp;
+
+            tmpColor = color0;
+            color0 = color1;
+            color1 = tmpColor;
         }
         BorderIterator borderIterator1 = new BresenhamBorderIterator(x0, y0, x1, y1);
         BorderIterator borderIterator2 = new BresenhamBorderIterator(x0, y0, x2, y2);
@@ -303,7 +316,7 @@ public class Rasterization {
             int rightX = Math.max(borderIterator1.getX(), borderIterator2.getX());
             for (int x = leftX; x <= rightX; x++) {
                 double[] barycentric = findBarycentricCords(x, y, x0, y0, x1, y1, x2, y2);
-                pixelWriter.setColor(x, y, createColorFromBarycentric(barycentric, color1, color2, color3));
+                pixelWriter.setColor(x, y, createColorFromBarycentric(barycentric, color0, color1, color2));
             }
             borderIterator1.next();
             borderIterator2.next();
@@ -315,7 +328,7 @@ public class Rasterization {
             int rightX = Math.max(borderIterator2.getX(), borderIterator3.getX());
             for (int x = leftX; x <= rightX; x++) {
                 double[] barycentric = findBarycentricCords(x, y, x0, y0, x1, y1, x2, y2);
-                pixelWriter.setColor(x, y, createColorFromBarycentric(barycentric, color1, color2, color3));
+                pixelWriter.setColor(x, y, createColorFromBarycentric(barycentric, color0, color1, color2));
             }
             borderIterator2.next();
             borderIterator3.next();
