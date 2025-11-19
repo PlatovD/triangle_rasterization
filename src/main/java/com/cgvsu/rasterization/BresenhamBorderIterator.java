@@ -23,7 +23,7 @@ public class BresenhamBorderIterator implements BorderIterator {
     private int error;
 
     public BresenhamBorderIterator(int x0, int y0, int x1, int y1) {
-        cntSteps = Math.abs(y1 - y0) + 1;
+        cntSteps = Math.max(Math.abs(y1 - y0), Math.abs(x1 - x0)) + 1;
         wasChangeY = Math.abs(y1 - y0) > Math.abs(x1 - x0);
         if (wasChangeY) {
             int tmp = y0;
@@ -72,23 +72,18 @@ public class BresenhamBorderIterator implements BorderIterator {
     }
 
     public void next() {
-        boolean stepCompleted = false;
-        while (!stepCompleted) {
-            if (wasChangeY) stepCompleted = true;
-            error += Math.abs(2 * dy);
-            currentX++;
-            if (!wasChangeY && dy == 0) stepCompleted = true; // случай прямой вниз
-            if (error > dx) {
-                currentY += step;
-                error = -(2 * dx - error);
-                stepCompleted = true;
-            }
+        error += Math.abs(2 * dy);
+        currentX++;
+        if (error > dx) {
+            currentY += step;
+            error = -(2 * dx - error);
+
+
         }
-        cntSteps--;
     }
 
     @Override
     public boolean hasNext() {
-        return cntSteps > 0;
+        return currentX != x1 || currentY != y1;
     }
 }

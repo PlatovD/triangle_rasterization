@@ -4,6 +4,9 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.paint.Color;
 
+import static java.lang.Math.min;
+import static java.lang.Math.max;
+
 public class Rasterization {
 
     public static void drawRectangle(
@@ -16,6 +19,25 @@ public class Rasterization {
         for (int row = y; row < y + height; ++row)
             for (int col = x; col < x + width; ++col)
                 pixelWriter.setColor(col, row, color);
+    }
+
+    public static void drawLineBresenham(PixelWriter pixelWriter, int x0, int y0, int x1, int y1) {
+        if (y1 < y0) {
+            int tmp = y0;
+            y0 = y1;
+            y1 = tmp;
+
+            tmp = x0;
+            x0 = x1;
+            x1 = tmp;
+        }
+        BorderIterator iterator = new BresenhamBorderIterator(x0, y0, x1, y1);
+        while (iterator.hasNext()) {
+            int x = iterator.getX();
+            int y = iterator.getY();
+            pixelWriter.setColor(x, y, Color.BLACK);
+            iterator.next();
+        }
     }
 
     /**
@@ -310,35 +332,57 @@ public class Rasterization {
         BorderIterator borderIterator2 = new BresenhamBorderIterator(x0, y0, x2, y2);
         BorderIterator borderIterator3 = new BresenhamBorderIterator(x1, y1, x2, y2);
 
+        // Для текущего y рисовать до ласт x. Как только y изменился у обоих, можно рисовать от ласт x одного из итераторов до ласт x другого из итераторов
+        // Все это если
+        int lastX1 = 0;
+        int lastX2 = 0;
+        int lastY = y0;
         while (borderIterator1.hasNext() && borderIterator2.hasNext()) {
-            int y = borderIterator1.getY();
-            int leftX = Math.min(borderIterator1.getX(), borderIterator2.getX());
-            int rightX = Math.max(borderIterator1.getX(), borderIterator2.getX());
-            for (int x = leftX; x <= rightX; x++) {
-                double[] barycentric = findBarycentricCords(x, y, x0, y0, x1, y1, x2, y2);
-                pixelWriter.setColor(x, y, createColorFromBarycentric(barycentric, color0, color1, color2));
+            lastX1 = borderIterator1.getX();
+            lastX2 = borderIterator2.getX();
+            pixelWriter.setColor(lastX1, lastY, createColorFromBarycentric(findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2), color0, color1, color2));
+            pixelWriter.setColor(lastX2, lastY, createColorFromBarycentric(findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2), color0, color1, color2));
+            if (borderIterator1.getY() != lastY && borderIterator2.getY() != lastY) {
+                for (int x = min(lastX1, lastX2); x <= max(lastX1, lastX2); x++) {
+                    pixelWriter.setColor(x, lastY, createColorFromBarycentric(findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2), color0, color1, color2));
+                }
+                lastY = borderIterator1.getY();
             }
-            borderIterator1.next();
-            borderIterator2.next();
+            if (borderIterator1.getY() == lastY)
+                borderIterator1.next();
+            if (borderIterator2.getY() == lastY)
+                borderIterator2.next();
+        }
+        for (int x = min(lastX1, lastX2); x <= max(lastX1, lastX2); x++) {
+            pixelWriter.setColor(x, lastY, createColorFromBarycentric(findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2), color0, color1, color2));
         }
 
-        while (borderIterator3.hasNext() && borderIterator2.hasNext()) {
-            int y = borderIterator2.getY();
-            int leftX = Math.min(borderIterator2.getX(), borderIterator3.getX());
-            int rightX = Math.max(borderIterator2.getX(), borderIterator3.getX());
-            for (int x = leftX; x <= rightX; x++) {
-                double[] barycentric = findBarycentricCords(x, y, x0, y0, x1, y1, x2, y2);
-                pixelWriter.setColor(x, y, createColorFromBarycentric(barycentric, color0, color1, color2));
+        lastY = y1;
+        while (borderIterator2.hasNext() && borderIterator3.hasNext()) {
+            lastX1 = borderIterator2.getX();
+            lastX2 = borderIterator3.getX();
+            pixelWriter.setColor(lastX1, lastY, createColorFromBarycentric(findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2), color0, color1, color2));
+            pixelWriter.setColor(lastX2, lastY, createColorFromBarycentric(findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2), color0, color1, color2));
+            if (borderIterator2.getY() != lastY && borderIterator3.getY() != lastY) {
+                for (int x = min(lastX1, lastX2); x <= max(lastX1, lastX2); x++) {
+                    pixelWriter.setColor(x, lastY, createColorFromBarycentric(findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2), color0, color1, color2));
+                }
+                lastY = borderIterator2.getY();
             }
-            borderIterator2.next();
-            borderIterator3.next();
+            if (borderIterator2.getY() == lastY)
+                borderIterator2.next();
+            if (borderIterator3.getY() == lastY)
+                borderIterator3.next();
+        }
+        for (int x = min(lastX1, lastX2); x <= max(lastX1, lastX2); x++) {
+            pixelWriter.setColor(x, lastY, createColorFromBarycentric(findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2), color0, color1, color2));
         }
     }
 
     private static Color createColorFromBarycentric(double[] barycentric, Color color1, Color color2, Color color3) {
-        double a = Math.max(0, Math.min(1, barycentric[0]));
-        double b = Math.max(0, Math.min(1, barycentric[1]));
-        double c = Math.max(0, Math.min(1, barycentric[2]));
+        double a = max(0, min(1, barycentric[0]));
+        double b = max(0, min(1, barycentric[1]));
+        double c = max(0, min(1, barycentric[2]));
 
         return new Color(
                 color1.getRed() * a + color2.getRed() * b + color3.getRed() * c,
@@ -393,19 +437,23 @@ public class Rasterization {
 
         while (borderIterator1.hasNext() && borderIterator2.hasNext()) {
             int y = borderIterator1.getY();
-            int leftX = Math.min(borderIterator1.getX(), borderIterator2.getX());
-            int rightX = Math.max(borderIterator1.getX(), borderIterator2.getX());
+            int leftX = min(borderIterator1.getX(), borderIterator2.getX());
+            int rightX = max(borderIterator1.getX(), borderIterator2.getX());
             for (int x = leftX; x <= rightX; x++) {
                 pixelWriter.setColor(x, y, color);
             }
             borderIterator1.next();
             borderIterator2.next();
         }
-
+//        if (y2 == y1) {
+//            for (int x = Math.min(x1, x2); x <= Math.max(x1, x2); x++){
+//                pixelWriter.setColor(x, y1, Color.BLACK);
+//            }
+//        }
         while (borderIterator3.hasNext() && borderIterator2.hasNext()) {
             int y = borderIterator2.getY();
-            int leftX = Math.min(borderIterator2.getX(), borderIterator3.getX());
-            int rightX = Math.max(borderIterator2.getX(), borderIterator3.getX());
+            int leftX = min(borderIterator2.getX(), borderIterator3.getX());
+            int rightX = max(borderIterator2.getX(), borderIterator3.getX());
             for (int x = leftX; x <= rightX; x++) {
                 pixelWriter.setColor(x, y, color);
             }
