@@ -73,7 +73,6 @@ public class RasterizationController {
     @FXML
     private void handleMouseMove(MouseEvent mouseEvent) {
 //        canvas.getGraphicsContext2D().clearRect(0, 0, 1000, 1000);
-//        Rasterization.drawLineBresenham(canvas.getGraphicsContext2D().getPixelWriter(), 200, 200, (int) mouseEvent.getX(), (int) mouseEvent.getY());
         if (activeTriangle == null) return;
         canvas.getGraphicsContext2D().clearRect(0, 0, 1000, 1000);
         activeTriangle.setPointByIndex(activePointIndex, new Point((int) mouseEvent.getX(), (int) mouseEvent.getY()));

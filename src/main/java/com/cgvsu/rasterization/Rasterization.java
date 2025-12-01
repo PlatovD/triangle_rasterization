@@ -4,8 +4,13 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.paint.Color;
 
-import static java.lang.Math.min;
-import static java.lang.Math.max;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static java.lang.Math.*;
+import static java.lang.Math.abs;
 
 public class Rasterization {
 
@@ -19,6 +24,207 @@ public class Rasterization {
         for (int row = y; row < y + height; ++row)
             for (int col = x; col < x + width; ++col)
                 pixelWriter.setColor(col, row, color);
+    }
+
+    public static Map<Integer, List<Integer>> myBresenhamOneY(int x0, int y0, int x1, int y1) {
+        Map<Integer, List<Integer>> points = new HashMap<>();
+        int dx = abs(x0 - x1);
+        int dy = abs(y0 - y1);
+
+        int x = x0, y = y0;
+        int error = 0;
+        int stepX = 1;
+        int stepY = 1;
+        if (x1 - x0 < 0) {
+            stepX *= -1;
+        }
+        if (y1 - y0 < 0) {
+            stepY *= -1;
+        }
+        if (dx > dy) {
+            // тогда я меняю на каждой итерации x, а для y коплю ошибки
+            // тогда я могу равномерно разделить подъем, когда иду по y. То есть на каждом шаге по x надо на какое то нецелое
+            // число, которое меньше нуля (dx > dy) менять y. Но это не целое. Поэтому я умножу все на dx,а потом из за
+            // того, что 0.5 - ошибка при которой я должен закрасить клетку сверху - я буду умножать еще на два
+            for (int i = 0; i <= dx; i++) {
+//                pw.setColor(x, y, Color.BLACK);
+                if (points.containsKey(y)) {
+                    points.get(y).add(x);
+                } else {
+                    points.put(y, new ArrayList<>());
+                    points.get(y).add(x);
+                }
+                error += 2 * dy;
+                if (error > dx) {
+                    y += stepY;
+                    error = -(2 * dx - error);
+                }
+                x += stepX;
+            }
+        } else {
+            // тогда я меняю на каждой итерации y, а для x коплю ошибки
+            for (int i = 0; i <= dy; i++) {
+//                pw.setColor(x, y, Color.BLACK);
+                points.put(y, new ArrayList<>());
+                points.get(y).add(x);
+                error += 2 * dx;
+                if (error > dy) {
+                    x += stepX;
+                    error = -(2 * dy - error);
+                }
+                y += stepY;
+            }
+        }
+        return points;
+    }
+
+    public static Map<Integer, List<Integer>> myBresenhamOneX(int x0, int y0, int x1, int y1) {
+        Map<Integer, List<Integer>> points = new HashMap<>();
+        int dx = abs(x0 - x1);
+        int dy = abs(y0 - y1);
+
+        int x = x0, y = y0;
+        int error = 0;
+        int stepX = 1;
+        int stepY = 1;
+        if (x1 - x0 < 0) {
+            stepX *= -1;
+        }
+        if (y1 - y0 < 0) {
+            stepY *= -1;
+        }
+        if (dx > dy) {
+            // тогда я меняю на каждой итерации x, а для y коплю ошибки
+            // тогда я могу равномерно разделить подъем, когда иду по y. То есть на каждом шаге по x надо на какое то нецелое
+            // число, которое меньше нуля (dx > dy) менять y. Но это не целое. Поэтому я умножу все на dx,а потом из за
+            // того, что 0.5 - ошибка при которой я должен закрасить клетку сверху - я буду умножать еще на два
+            for (int i = 0; i <= dx; i++) {
+//                pw.setColor(x, y, Color.BLACK);
+                points.put(x, new ArrayList<>());
+                points.get(x).add(y);
+                error += 2 * dy;
+                if (error > dx) {
+                    y += stepY;
+                    error = -(2 * dx - error);
+                }
+                x += stepX;
+            }
+        } else {
+            // тогда я меняю на каждой итерации y, а для x коплю ошибки
+            for (int i = 0; i <= dy; i++) {
+//                pw.setColor(x, y, Color.BLACK);
+                if (points.containsKey(x)) {
+                    points.get(x).add(y);
+                } else {
+                    points.put(x, new ArrayList<>());
+                    points.get(x).add(y);
+                }
+                error += 2 * dx;
+                if (error > dy) {
+                    x += stepX;
+                    error = -(2 * dy - error);
+                }
+                y += stepY;
+            }
+        }
+        return points;
+    }
+
+
+    public static void drawTriangleBresenham(PixelWriter pw, int x0, int y0, int x1, int y1, int x2, int y2) {
+        if (max(y0, max(y1, y2)) - min(y0, max(y1, y2)) > max(x0, max(x1, x2)) - min(x0, max(x1, x2))) {
+            int tmp;
+            if (y0 > y1) {
+                tmp = y1;
+                y1 = y0;
+                y0 = tmp;
+
+                tmp = x1;
+                x1 = x0;
+                x0 = tmp;
+            }
+            if (y1 > y2) {
+                tmp = y2;
+                y2 = y1;
+                y1 = tmp;
+
+                tmp = x2;
+                x2 = x1;
+                x1 = tmp;
+            }
+            if (y0 > y1) {
+                tmp = y1;
+                y1 = y0;
+                y0 = tmp;
+
+                tmp = x1;
+                x1 = x0;
+                x0 = tmp;
+            }
+
+            Map<Integer, List<Integer>> lineAC = myBresenhamOneY(x0, y0, x2, y2);
+            Map<Integer, List<Integer>> lineAB = myBresenhamOneY(x0, y0, x1, y1);
+            Map<Integer, List<Integer>> lineBC = myBresenhamOneY(x1, y1, x2, y2);
+
+            for (int y = y0; y <= y2; y++) {
+                int borderFirst = lineAC.get(y).get(lineAC.get(y).size() - 1);
+                int borderLast;
+                if (lineAB.containsKey(y)) {
+                    borderLast = lineAB.get(y).get(lineAB.get(y).size() - 1);
+                } else {
+                    borderLast = lineBC.get(y).get(lineBC.get(y).size() - 1);
+                }
+                for (int x = min(borderFirst, borderLast); x <= max(borderFirst, borderLast); x++) {
+                    pw.setColor(x, y, Color.BLACK);
+                }
+            }
+        } else {
+            int tmp;
+            if (x0 > x1) {
+                tmp = x1;
+                x1 = x0;
+                x0 = tmp;
+
+                tmp = y1;
+                y1 = y0;
+                y0 = tmp;
+            }
+            if (x1 > x2) {
+                tmp = x2;
+                x2 = x1;
+                x1 = tmp;
+
+                tmp = y2;
+                y2 = y1;
+                y1 = tmp;
+            }
+            if (x0 > x1) {
+                tmp = x1;
+                x1 = x0;
+                x0 = tmp;
+
+                tmp = y1;
+                y1 = y0;
+                y0 = tmp;
+            }
+
+            Map<Integer, List<Integer>> lineAC = myBresenhamOneX(x0, y0, x2, y2);
+            Map<Integer, List<Integer>> lineAB = myBresenhamOneX(x0, y0, x1, y1);
+            Map<Integer, List<Integer>> lineBC = myBresenhamOneX(x1, y1, x2, y2);
+
+            for (int x = x0; x <= x2; x++) {
+                int borderFirst = lineAC.get(x).get(lineAC.get(x).size() - 1);
+                int borderLast;
+                if (lineAB.containsKey(x)) {
+                    borderLast = lineAB.get(x).get(lineAB.get(x).size() - 1);
+                } else {
+                    borderLast = lineBC.get(x).get(lineBC.get(x).size() - 1);
+                }
+                for (int y = min(borderFirst, borderLast); y <= max(borderFirst, borderLast); y++) {
+                    pw.setColor(x, y, Color.BLACK);
+                }
+            }
+        }
     }
 
     public static void drawLineBresenham(PixelWriter pixelWriter, int x0, int y0, int x1, int y1) {
@@ -334,17 +540,21 @@ public class Rasterization {
 
         // Для текущего y рисовать до ласт x. Как только y изменился у обоих, можно рисовать от ласт x одного из итераторов до ласт x другого из итераторов
         // Все это если
+        double[] barycentric;
         int lastX1 = 0;
         int lastX2 = 0;
         int lastY = y0;
         while (borderIterator1.hasNext() && borderIterator2.hasNext()) {
             lastX1 = borderIterator1.getX();
             lastX2 = borderIterator2.getX();
-            pixelWriter.setColor(lastX1, lastY, createColorFromBarycentric(findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2), color0, color1, color2));
-            pixelWriter.setColor(lastX2, lastY, createColorFromBarycentric(findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2), color0, color1, color2));
+            barycentric = findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2);
+            pixelWriter.setColor(lastX1, lastY, createColorFromBarycentric(barycentric, color0, color1, color2));
+            barycentric = findBarycentricCords(lastX2, lastY, x0, y0, x1, y1, x2, y2);
+            pixelWriter.setColor(lastX2, lastY, createColorFromBarycentric(barycentric, color0, color1, color2));
             if (borderIterator1.getY() != lastY && borderIterator2.getY() != lastY) {
                 for (int x = min(lastX1, lastX2); x <= max(lastX1, lastX2); x++) {
-                    pixelWriter.setColor(x, lastY, createColorFromBarycentric(findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2), color0, color1, color2));
+                    barycentric = findBarycentricCords(x, lastY, x0, y0, x1, y1, x2, y2);
+                    pixelWriter.setColor(x, lastY, createColorFromBarycentric(barycentric, color0, color1, color2));
                 }
                 lastY = borderIterator1.getY();
             }
@@ -354,18 +564,22 @@ public class Rasterization {
                 borderIterator2.next();
         }
         for (int x = min(lastX1, lastX2); x <= max(lastX1, lastX2); x++) {
-            pixelWriter.setColor(x, lastY, createColorFromBarycentric(findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2), color0, color1, color2));
+            barycentric = findBarycentricCords(x, lastY, x0, y0, x1, y1, x2, y2);
+            pixelWriter.setColor(x, lastY, createColorFromBarycentric(barycentric, color0, color1, color2));
         }
 
         lastY = y1;
         while (borderIterator2.hasNext() && borderIterator3.hasNext()) {
             lastX1 = borderIterator2.getX();
             lastX2 = borderIterator3.getX();
-            pixelWriter.setColor(lastX1, lastY, createColorFromBarycentric(findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2), color0, color1, color2));
-            pixelWriter.setColor(lastX2, lastY, createColorFromBarycentric(findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2), color0, color1, color2));
+            barycentric = findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2);
+            pixelWriter.setColor(lastX1, lastY, createColorFromBarycentric(barycentric, color0, color1, color2));
+            barycentric = findBarycentricCords(lastX2, lastY, x0, y0, x1, y1, x2, y2);
+            pixelWriter.setColor(lastX2, lastY, createColorFromBarycentric(barycentric, color0, color1, color2));
             if (borderIterator2.getY() != lastY && borderIterator3.getY() != lastY) {
                 for (int x = min(lastX1, lastX2); x <= max(lastX1, lastX2); x++) {
-                    pixelWriter.setColor(x, lastY, createColorFromBarycentric(findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2), color0, color1, color2));
+                    barycentric = findBarycentricCords(x, lastY, x0, y0, x1, y1, x2, y2);
+                    pixelWriter.setColor(x, lastY, createColorFromBarycentric(barycentric, color0, color1, color2));
                 }
                 lastY = borderIterator2.getY();
             }
@@ -375,7 +589,8 @@ public class Rasterization {
                 borderIterator3.next();
         }
         for (int x = min(lastX1, lastX2); x <= max(lastX1, lastX2); x++) {
-            pixelWriter.setColor(x, lastY, createColorFromBarycentric(findBarycentricCords(lastX1, lastY, x0, y0, x1, y1, x2, y2), color0, color1, color2));
+            barycentric = findBarycentricCords(x, lastY, x0, y0, x1, y1, x2, y2);
+            pixelWriter.setColor(x, lastY, createColorFromBarycentric(barycentric, color0, color1, color2));
         }
     }
 

@@ -1,6 +1,11 @@
 package com.cgvsu.rasterization;
 
 
+import javafx.scene.image.PixelWriter;
+import javafx.scene.paint.Color;
+
+import static java.lang.Math.abs;
+
 /**
  * Реализация BorderIterator. Позволяет создавать итерационный путь из точек, следуя из первой во вторую.
  * Путь строится алгоритмом Брезенхейма и включает в себя все положения, в которых может находиться линия.
@@ -23,8 +28,8 @@ public class BresenhamBorderIterator implements BorderIterator {
     private int error;
 
     public BresenhamBorderIterator(int x0, int y0, int x1, int y1) {
-        cntSteps = Math.max(Math.abs(y1 - y0), Math.abs(x1 - x0)) + 1;
-        wasChangeY = Math.abs(y1 - y0) > Math.abs(x1 - x0);
+        cntSteps = Math.max(abs(y1 - y0), abs(x1 - x0)) + 1;
+        wasChangeY = abs(y1 - y0) > abs(x1 - x0);
         if (wasChangeY) {
             int tmp = y0;
             y0 = x0;
@@ -72,13 +77,11 @@ public class BresenhamBorderIterator implements BorderIterator {
     }
 
     public void next() {
-        error += Math.abs(2 * dy);
+        error += abs(2 * dy);
         currentX++;
         if (error > dx) {
             currentY += step;
             error = -(2 * dx - error);
-
-
         }
     }
 

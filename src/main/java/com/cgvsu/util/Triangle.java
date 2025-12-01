@@ -54,14 +54,23 @@ public class Triangle {
         Point pointA = points.get(0);
         Point pointB = points.get(1);
         Point pointC = points.get(2);
-        Rasterization.drawInterpolatedTriangleByIterator(
+        Rasterization.drawLineBresenham(gc.getPixelWriter(), pointA.getX(), pointA.getY(), pointB.getX(), pointB.getY());
+        Rasterization.drawLineBresenham(gc.getPixelWriter(), pointB.getX(), pointB.getY(), pointC.getX(), pointC.getY());
+        Rasterization.drawLineBresenham(gc.getPixelWriter(), pointA.getX(), pointA.getY(), pointC.getX(), pointC.getY());
+//        Rasterization.drawInterpolatedTriangleByIterator(
+//                gc.getPixelWriter(),
+//                pointA.getX(), pointA.getY(),
+//                pointB.getX(), pointB.getY(),
+//                pointC.getX(), pointC.getY(),
+//                colorProvider.getVertexColor(0),
+//                colorProvider.getVertexColor(1),
+//                colorProvider.getVertexColor(2)
+//        );
+        Rasterization.drawTriangleBresenham(
                 gc.getPixelWriter(),
                 pointA.getX(), pointA.getY(),
                 pointB.getX(), pointB.getY(),
-                pointC.getX(), pointC.getY(),
-                colorProvider.getVertexColor(0),
-                colorProvider.getVertexColor(1),
-                colorProvider.getVertexColor(2)
+                pointC.getX(), pointC.getY()
         );
     }
 
